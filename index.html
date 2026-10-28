@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rekening Bersama</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1d2320;--muted:#6b746f;--line:#e2e0d8;--accent:#1f6f54;--in:#1f7a4d;--out:#b3402f;--accent-text:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#141816;--card:#1d2420;--text:#eef1ee;--muted:#98a39d;--line:#2d3731;--accent:#4cb98d;--in:#5cc58f;--out:#ef7f6e;--accent-text:#0d1a14;color-scheme:dark}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+h1{font-size:20px;margin:0}
+h2{font-size:15px;margin:22px 0 10px;color:var(--muted);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.total{text-align:center;padding:18px 14px}
+.total small,.owner small{color:var(--muted);display:block}
+.total .big{font-size:30px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.owner b{font-size:19px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.seg button{padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;font-weight:600}
+.seg button.on.in{background:var(--in);border-color:var(--in);color:var(--accent-text)}
+.seg button.on.out{background:var(--out);border-color:var(--out);color:var(--accent-text)}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.primary{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-text);font:inherit;font-weight:700}
+.primary:disabled{opacity:.5}
+.ghost{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;font-size:14px}
+.msg{font-size:14px;min-height:20px;margin-top:8px;color:var(--muted)}
+.msg.err{color:var(--out)}
+.tx{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.tx:last-child{border-bottom:0}
+.meta{color:var(--muted);font-size:13px}
+.amt{font-weight:700;text-align:right;white-space:nowrap}
+.amt.in{color:var(--in)}.amt.out{color:var(--out)}
+.del{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;padding:2px 0}
+.empty{color:var(--muted);text-align:center;padding:14px}
+summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><h1>Rekening Bersama</h1><button class="ghost" id="refresh">Muat ulang</button></div>
+<div class="msg" id="sync" style="margin:-6px 0 10px"></div>
+
+<div class="card total"><small>Saldo rekening</small><div class="big" id="total">Rp0</div></div>
+<div class="grid">
+  <div class="card owner"><small>Milik Rafie</small><b id="bRafie">Rp0</b></div>
+  <div class="card owner"><small>Milik Bapa</small><b id="bBapa">Rp0</b></div>
+</div>
+
+<h2>Catat transaksi</h2>
+<div class="card">
+  <div class="seg">
+    <button class="in on" id="tIn">Uang masuk</button>
+    <button class="out" id="tOut">Uang keluar</button>
+  </div>
+  <label for="owner">Atas nama</label>
+  <select id="owner"><option>Rafie</option><option>Bapa</option></select>
+  <div class="row2">
+    <div><label for="amount">Jumlah (Rp)</label><input id="amount" inputmode="numeric" placeholder="0"></div>
+    <div><label for="date">Tanggal</label><input id="date" type="date"></div>
+  </div>
+  <label for="note">Keterangan</label>
+  <input id="note" placeholder="Contoh: setoran bulanan">
+  <div class="msg err" id="err"></div>
+  <button class="primary" id="save">Simpan</button>
+</div>
+
+<h2>Riwayat</h2>
+<div class="card" id="list"></div>
+
+<h2>Pengaturan</h2>
+<div class="card">
+  <details id="settings">
+    <summary>Koneksi GitHub</summary>
+    <label for="cOwner">Pemilik repo</label><input id="cOwner">
+    <label for="cRepo">Nama repo</label><input id="cRepo">
+    <div class="row2">
+      <div><label for="cBranch">Branch</label><input id="cBranch"></div>
+      <div><label for="cPath">File data</label><input id="cPath"></div>
+    </div>
+    <label for="cToken">Token akses (disimpan hanya di perangkat ini)</label>
+    <input id="cToken" type="password" autocomplete="off" placeholder="github_pat_...">
+    <button class="primary" id="cSave">Simpan pengaturan</button>
+  </details>
+</div>
+</main>
+<script>
+(function(){
+var CK="tabungan-cfg-v1";
+var cfg={owner:"Hamzahsinau",repo:"TABUNGAN",branch:"main",path:"data.json",token:""};
+try{var s=JSON.parse(localStorage.getItem(CK)||"null");if(s)Object.keys(cfg).forEach(function(k){if(s[k])cfg[k]=s[k]})}catch(e){}
+var tx=[],type="in",pendingDel=null,busy=false;
+var $=function(i){return document.getElementById(i)};
+function rp(n){return (n<0?"-":"")+"Rp"+Math.abs(n).toLocaleString("id-ID")}
+function bal(a,o){return a.reduce(function(s,t){return t.owner===o?s+(t.type==="in"?t.amount:-t.amount):s},0)}
+function fmtDate(d){var p=d.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:d}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function enc(s){return btoa(unescape(encodeURIComponent(s)))}
+function dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,""))))}
+function status(t,err){var m=$("sync");m.textContent=t;m.className="msg"+(err?" err":"")}
+
+function url(){return "https://api.github.com/repos/"+cfg.owner+"/"+cfg.repo+"/contents/"+cfg.path}
+function headers(){var h={"Accept":"application/vnd.github+json"};if(cfg.token)h["Authorization"]="Bearer "+cfg.token;return h}
+
+async function fetchRemote(){
+  var r=await fetch(url()+"?ref="+encodeURIComponent(cfg.branch)+"&t="+Date.now(),{headers:headers(),cache:"no-store"});
+  if(r.status===404)return {tx:[],sha:null};
+  if(r.status===401||r.status===403)throw new Error("Akses ditolak. Periksa token di Pengaturan.");
+  if(!r.ok)throw new Error("Gagal memuat data (kode "+r.status+").");
+  var j=await r.json();
+  var d=JSON.parse(dec(j.content));
+  return {tx:Array.isArray(d.tx)?d.tx:[],sha:j.sha};
+}
+async function load(){
+  status("Memuat data...");
+  try{var r=await fetchRemote();tx=r.tx;render();status("Tersinkron "+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}))}
+  catch(e){status(e.message||"Gagal memuat data.",true)}
+}
+// Setiap penulisan: ambil data terbaru, terapkan perubahan, lalu simpan (ulangi bila bentrok).
+async function mutate(fn){
+  if(!cfg.token)throw new Error("Isi token di Pengaturan agar bisa menyimpan.");
+  for(var i=0;i<3;i++){
+    var r=await fetchRemote();
+    var next=fn(r.tx);
+    var body={message:"Update data tabungan",content:enc(JSON.stringify({tx:next},null,1)),branch:cfg.branch};
+    if(r.sha)body.sha=r.sha;
+    var h=headers();h["Content-Type"]="application/json";
+    var p=await fetch(url(),{method:"PUT",headers:h,body:JSON.stringify(body)});
+    if(p.ok){tx=next;render();status("Tersimpan "+new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}));return}
+    if(p.status===409||p.status===422)continue;
+    if(p.status===401||p.status===403||p.status===404)throw new Error("Gagal menyimpan. Pastikan token punya izin Contents: Read and write pada repo ini.");
+    throw new Error("Gagal menyimpan (kode "+p.status+").");
+  }
+  throw new Error("Data sedang diubah perangkat lain. Coba lagi.");
+}
+
+function render(){
+  var r=bal(tx,"Rafie"),b=bal(tx,"Bapa");
+  $("bRafie").textContent=rp(r);$("bBapa").textContent=rp(b);$("total").textContent=rp(r+b);
+  var l=$("list");
+  if(!tx.length){l.innerHTML='<div class="empty">Belum ada transaksi.</div>';return}
+  var s=tx.slice().sort(function(a,c){return c.date.localeCompare(a.date)||c.id-a.id});
+  l.innerHTML=s.map(function(t){
+    return '<div class="tx"><div><div><b>'+esc(t.owner)+'</b> · '+(t.type==="in"?"Masuk":"Keluar")+'</div>'+
+    '<div class="meta">'+fmtDate(t.date)+(t.note?' · '+esc(t.note):'')+'</div>'+
+    '<button class="del" data-id="'+t.id+'">'+(pendingDel===t.id?"Yakin hapus?":"Hapus")+'</button></div>'+
+    '<div class="amt '+t.type+'">'+(t.type==="in"?"+":"−")+rp(t.amount)+'</div></div>';
+  }).join("");
+}
+function setType(t){type=t;$("tIn").classList.toggle("on",t==="in");$("tOut").classList.toggle("on",t==="out")}
+$("tIn").onclick=function(){setType("in")};
+$("tOut").onclick=function(){setType("out")};
+$("amount").oninput=function(){var v=this.value.replace(/\D/g,"");this.value=v?Number(v).toLocaleString("id-ID"):""};
+$("refresh").onclick=load;
+
+$("save").onclick=async function(){
+  var amt=parseInt($("amount").value.replace(/\D/g,""),10),o=$("owner").value,d=$("date").value,e=$("err"),btn=this;
+  if(busy)return;
+  if(!amt){e.textContent="Isi jumlah terlebih dahulu.";return}
+  if(!d){e.textContent="Pilih tanggal.";return}
+  var item={id:Date.now(),type:type,owner:o,amount:amt,date:d,note:$("note").value.trim()};
+  busy=true;btn.disabled=true;e.textContent="Menyimpan...";
+  try{
+    await mutate(function(a){
+      if(item.type==="out"&&item.amount>bal(a,o))throw new Error("Saldo "+o+" tidak cukup (tersisa "+rp(bal(a,o))+").");
+      return a.concat([item]);
+    });
+    e.textContent="";$("amount").value="";$("note").value="";
+  }catch(x){e.textContent=x.message}
+  busy=false;btn.disabled=false;
+};
+$("list").onclick=async function(ev){
+  var id=ev.target.getAttribute&&ev.target.getAttribute("data-id");if(!id||busy)return;id=Number(id);
+  if(pendingDel!==id){pendingDel=id;render();return}
+  pendingDel=null;busy=true;
+  try{await mutate(function(a){return a.filter(function(t){return t.id!==id})})}catch(x){status(x.message,true);render()}
+  busy=false;
+};
+
+$("cOwner").value=cfg.owner;$("cRepo").value=cfg.repo;$("cBranch").value=cfg.branch;$("cPath").value=cfg.path;$("cToken").value=cfg.token;
+$("cSave").onclick=function(){
+  cfg={owner:$("cOwner").value.trim(),repo:$("cRepo").value.trim(),branch:$("cBranch").value.trim()||"main",path:$("cPath").value.trim()||"data.json",token:$("cToken").value.trim()};
+  try{localStorage.setItem(CK,JSON.stringify(cfg))}catch(e){}
+  $("settings").open=false;load();
+};
+var n=new Date();$("date").value=n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&!busy)load()});
+if(!cfg.token)$("settings").open=true;
+render();load();
+})();
+</script>
+</body>
+</html>
