@@ -23,6 +23,14 @@
    "amount": 100000,
    "date": "2026-10-28",
    "note": ""
+  },
+  {
+   "id": 1793359709011,
+   "type": "in",
+   "owner": "Rafie",
+   "amount": 40000,
+   "date": "2026-10-30",
+   "note": "Setoran"
   }
  ]
 }
