@@ -31,6 +31,14 @@
    "amount": 40000,
    "date": "2026-10-30",
    "note": "Setoran"
+  },
+  {
+   "id": 1793480679391,
+   "type": "in",
+   "owner": "Bapa",
+   "amount": 329000,
+   "date": "2026-10-30",
+   "note": "setor"
   }
  ]
 }
