@@ -39,6 +39,14 @@
    "amount": 329000,
    "date": "2026-10-30",
    "note": "setor"
+  },
+  {
+   "id": 1793535763930,
+   "type": "in",
+   "owner": "Rafie",
+   "amount": 300000,
+   "date": "2026-11-01",
+   "note": "Setoran"
   }
  ]
 }
