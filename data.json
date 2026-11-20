@@ -55,6 +55,14 @@
    "amount": 329000,
    "date": "2026-11-18",
    "note": ""
+  },
+  {
+   "id": 1795173420980,
+   "type": "out",
+   "owner": "Rafie",
+   "amount": 2000000,
+   "date": "2026-11-20",
+   "note": "Laptop patungan"
   }
  ]
 }
